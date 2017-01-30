@@ -12,11 +12,12 @@
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('home');
 });
 
 Route::get('auth/{provider}', 'Auth\SocialAuthController@redirectToProvider');
 Route::get('auth/{provider}/callback', 'Auth\SocialAuthController@handleProviderCallback');
+Route::post('auth/{provider}/deAuthCallback', 'Auth\SocialAuthController@handleProviderDeAuthCallback');
 
 Auth::routes();
 

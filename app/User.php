@@ -22,6 +22,7 @@ class User extends Authenticatable
         'provider',
         'provider_id',
         'access_token',
+        'is_active',
     ];
 
     /**

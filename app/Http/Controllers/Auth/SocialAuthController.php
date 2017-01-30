@@ -20,8 +20,6 @@ class SocialAuthController extends Controller
     |
     */
 
-//    use AuthenticatesUsers;
-
     /**
      * Where to redirect users after login.
      *
@@ -60,22 +58,32 @@ class SocialAuthController extends Controller
     public function handleProviderCallback($provider)
     {
         $user = Socialite::driver($provider)->user();
-        $data = [
+        $userData = [
             'name'        => $user->getName(),
             'email'       => $user->getEmail(),
             'avatar'       => $user->getAvatar(),
             'provider'    => $provider,
-            'provider_id' => $user->getId()
+            'provider_id' => $user->getId(),
+            'access_token' => $user->token,
+            'is_active' => 1,
         ];
 
-        Auth::login(User::firstOrCreate($data));
+        $authUser = $this->findOrCreateUser($userData);
+        if ($authUser) {
+            Auth::login($authUser, true);
+        }
         return redirect()->to($this->redirectTo);
+    }
 
-//        $user = Socialite::driver($provider)->user();
-//
-//        $authUser = $this->findOrCreateUser($user, $provider);
-//        Auth::login($authUser, true);
-//        return redirect($this->redirectTo);
+    /**
+     * Handle facebook deauhorization
+     *
+     */
+    public function handleProviderDeAuthCallback(Request $request)
+    {
+        //set is_active to 0
+
+        //return what facebook needs
     }
 
     /**
@@ -83,20 +91,21 @@ class SocialAuthController extends Controller
      * else, create a new user object.
      *
      * @param  $user     Socialite user object
-     * @param  $provider Social auth provider
      * @return  User
      */
-    public function findOrCreateUser($user, $provider)
+    public function findOrCreateUser($userData)
     {
-        $authUser = Auth::user()->where('provider_id', $user->id)->first();
-        if (!is_null($authUser) && $authUser) {
+        $authUser = User::where('provider_id', $userData['provider_id'])
+            ->where('provider', $userData['provider'])
+            ->where('access_token', $userData['access_token'])
+            ->first();
+        if (!is_null($authUser) && $authUser && $authUser->is_active) {
+            //user has been found and is active
             return $authUser;
         }
-        return Auth::user()->create([
-            'name'        => $user->name,
-            'email'       => $user->email,
-            'provider'    => $provider,
-            'provider_id' => $user->id
-        ]);
+
+        return User::create(
+            $userData
+        );
     }
 }
